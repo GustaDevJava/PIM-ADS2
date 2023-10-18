@@ -1,10 +1,10 @@
 # depslib dependency file v1.0
-1696953276 source:c:\users\fcngu\workspace c\testemuseu\main.c
+1697598168 source:c:\users\fcngu\workspace c\testemuseu\main.c
 	<stdio.h>
 	<stdlib.h>
 	<locale.h>
 	<string.h>
 	"telas.h"
 
-1696952941 c:\users\fcngu\workspace c\testemuseu\telas.h
+1697596533 c:\users\fcngu\workspace c\testemuseu\telas.h
 

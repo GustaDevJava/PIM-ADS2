@@ -12,6 +12,7 @@ struct ingresso
     char obra[100];
     char tipoIngresso[100];
     char dono[100];
+    int  validaIngresso;
 };
 
 typedef struct ingresso ingresso;
@@ -19,10 +20,15 @@ typedef struct ingresso ingresso;
 
 void telaUsuarioLogado(usuario usuaarios[], int i);
 void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[]);
-void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[]);
+void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int CIP);
 void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qnt, int opcaoObra, int tipoIngresso);
+void realizarLogin(int contador, usuario usuarios[], ingresso ingressos[]);
+void realizarLoginCIP(usuario usuarios[], ingresso ingressos[], int idPrmCmp);
+void realizarCadastro(usuario usuarios[], int CIP);
+void adicionaSaldoCIP(usuario usuarios[], int idLogado, float valorIngressos);
 
 int idIngresso = 0, contadorCriaIngresso = 0;
+int contador = 0, id = 0;
 
 int main()
 {
@@ -30,17 +36,20 @@ int main()
  //   int qntU = 1, qntI = 1;
     usuario usuarios[100];
     ingresso ingressos[100];
-
-    int opcao, contador = 0, id = 0, mudarTela = 0;
+    int opcao, mudarTela = 0;
     char emailValidar[50];
     char senhaValidar[15];
     int logado = 0;
-    int compEmail, compSenha;
+    //int compEmail, compSenha;
     int idLogado = 0;
     char cadastrarNovamente;
     int validaNovamente = 0;
     char sim[3] = "sim";
     char nao = 'n';
+    int opcaoObras, opcaoTipoIngresso;
+    char cadastroSN;
+    int idPrmCmp;
+
 
     do
     {
@@ -59,126 +68,33 @@ int main()
             printf("Obrigado por acessar o nosso sistema");
             break;
         case 1:
-
-            do
-            {
-                for (int i = contador; i < 100; i++)
-                {
-                    puts("Tela cadastro");
-                    id++;
-                    usuarios[i].id = id;
-                    fflush(stdin);
-                    puts("Insira seu nome: ");
-                    scanf("%100[^\n]s", &usuarios[i].nome);
-                    fflush(stdin);
-                    puts("Insira sua idade: ");
-                    scanf("%d", &usuarios[i].idade);
-                    fflush(stdin);
-                    puts("Insira seu email: ");
-                    scanf("%50[^\n]s", &usuarios[i].email);
-                    fflush(stdin);
-                    puts("Insira sua senha: ");
-                    scanf("%15[^\n]s", &usuarios[i].senha);
-                    fflush(stdin);
-                    contador++;
-                    break;
-                }
-                system("cls");
-                printf("Cliente cadastrado com sucesso! \n");
-                for (int i = id  - 1; i < contador; i++)
-                {
-                    printf("Id: %d \n", usuarios[i].id);
-                    printf("Nome: %s \n", usuarios[i].nome);
-                    printf("Idade: %d \n", usuarios[i].idade);
-                }
-
-                printf("Deseja realizar um novo cadastro? (s/n)");
-                scanf("%c", &cadastrarNovamente);
-                fflush(stdin);
-
-                if (cadastrarNovamente == 's')
-                {
-                    validaNovamente = 0;
-                }
-                else
-                {
-                    validaNovamente = 1;
-                }
-
-            } while (validaNovamente != 1);
-
+            realizarCadastro(usuarios, 0);
             break;
         case 2:
-            mudarTela = 1;
-            if (mudarTela)
+
+            printf("Você tem Cadastro no nosso sistema ? (s/n) \n");
+            fflush(stdin);
+            scanf("%c", &cadastroSN);
+
+            if(cadastroSN == 's')
             {
-                telaCompraIngresso();
-                int opcaoCompraIngresso;
-                scanf("%d", &opcaoCompraIngresso);
+                realizarLogin(contador, usuarios, ingressos);
+            }else
+            {
+                puts("Vamos realizar seu cadastro para que você consiga comprar o ingresso");
+                idPrmCmp = 1;
+                realizarCadastro(usuarios, idPrmCmp);
 
-                if (opcaoCompraIngresso != NULL)
-                {
-                    system("cls");
-                }
+                idPrmCmp = contador;
+                idPrmCmp = idPrmCmp - 1;
+                realizarLoginCI(usuarios,ingressos, idPrmCmp);
 
-                switch (opcaoCompraIngresso)
-                {
-                case 0:
-                    mudarTela = 0;
-                    system("cls");
-                    break;
-                case 1:
-                    printf("Vc comprou ingresso completo!");
-                    break;
-                case 2:
-                    printf("Vc comprou meio ingresso");
-                    break;
-                default:
-                    printf("Opção invalida");
-                    break;
-                }
             }
+
 
             break;
         case 3:
-
-            fflush(stdin);
-            printf("Informe seu email ou CPF: \n");
-            scanf("%50[^\n]s", &emailValidar);
-            fflush(stdin);
-            printf("Informe sua senha: \n");
-            scanf("%15[^\n]s", &senhaValidar);
-            fflush(stdin);
-
-            for (int i = 0; i <= contador; i++)
-            {
-
-                compEmail = strcmp(usuarios[i].email, emailValidar);
-                compSenha = strcmp(usuarios[i].senha, senhaValidar);
-
-                if (compEmail == 0 && compSenha == 0)
-                {
-                    logado = 1;
-                    idLogado = i;
-                    break;
-                }
-                else
-                {
-                    logado = 0;
-                }
-            }
-
-            if (logado)
-            {
-                printf("Vc esta logado!\n");
-                usuarioLogado(usuarios, idLogado, ingressos);
-            }
-            else
-            {
-                printf("Email ou senha inválidos \n");
-                system("cls");
-            }
-
+            realizarLogin(contador, usuarios, ingressos);
             break;
         default:
             printf("Opção invalida \n");
@@ -192,7 +108,7 @@ int main()
 
 void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[])
 {
-    int opcao, comparador;
+    int opcao, comparador, CIP = NULL;
     float saldo;
 
     do
@@ -208,10 +124,11 @@ void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[])
         switch (opcao)
         {
         case 0:
-            printf("Saindo");
+            system("cls");
+            puts("Saindo");
             break;
         case 1:
-            compraIngressos(usuarios, idLogado, ingressos);
+            compraIngressos(usuarios, idLogado, ingressos, CIP);
             break;
         case 2:
             printf("Viu apresentação");
@@ -240,7 +157,7 @@ void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[])
 
                 if(comparador == 0)
                 {
-                    printf("ID Ingresso: %d\n", ingressos[i].id);
+                    printf("\nID Ingresso: %d\n", ingressos[i].id);
                     printf("Dono Ingresso: %s\n", ingressos[i].dono);
                     printf("Obra: %s\n", ingressos[i].obra);
                     printf("Tipo Ingresso: %s\n", ingressos[i].tipoIngresso);
@@ -257,7 +174,7 @@ void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[])
     } while (opcao != 0);
 }
 
-void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[])
+void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int CIP)
 {
     int opcaoCompra, tipoIngresso, opcaoObra, qnt;
     float total;
@@ -308,30 +225,36 @@ void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[])
         scanf("%d", &opcaoObra);
 
         puts("Meio Ingresso valor: R$ 7,50");
-        puts("Quantos ingressos você deseja comprar ?");
+        puts("Quantos ingressos você deseja comprar para está obra ?");
         scanf("%d", &qnt);
 
         total = 7.50 * qnt;
+
+        if(CIP != NULL){
+            adicionaSaldoCIP(usuarios, idLogado, total);
+        }
 
         printf("Total: %.2f \n", total);
         puts("Você deseja continuar com a compra ? (s/n)");
         fflush(stdin);
         scanf("%c", &sn);
 
-        if (sn == 's')
+        if (sn == 's' && usuarios[idLogado].saldo > total)
         {
             puts("Saiba que ao adquirir este ingresso, você terá que comprovar o motivo da meia entrada");
             usuarios[idLogado].saldo = usuarios[idLogado].saldo - total;
 
             criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso);
         }
-        else if(usuarios[idLogado].saldo < total)
+        else if(sn == 'n')
         {
-            puts("Seu saldo é insulficiente para comprar esse ingresso");
+            system("cls");
+            puts("Compra cancelada");
         }
         else
         {
             system("cls");
+            puts("Seu saldo é insulficiente para comprar esse ingresso");
         }
         break;
     case 3:
@@ -340,8 +263,7 @@ void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[])
 
         criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso);
 
-
-
+        break;
     default:
         printf("Opção inválida");
     }
@@ -382,6 +304,126 @@ void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qn
         }
 
     }
+}
+
+void realizarLogin(int contador, usuario usuarios[], ingresso ingressos[])
+{
+
+    char emailValidar[50];
+    char senhaValidar[15];
+    int compSenha, compEmail, logado, idLogado;
+
+            fflush(stdin);
+            printf("Informe seu email ou CPF: \n");
+            scanf("%50[^\n]s", &emailValidar);
+            fflush(stdin);
+            printf("Informe sua senha: \n");
+            scanf("%15[^\n]s", &senhaValidar);
+            fflush(stdin);
+
+            for (int i = 0; i <= contador; i++)
+            {
+
+                compEmail = strcmp(usuarios[i].email, emailValidar);
+                compSenha = strcmp(usuarios[i].senha, senhaValidar);
+
+                if (compEmail == 0 && compSenha == 0)
+                {
+                    logado = 1;
+                    idLogado = i;
+                    break;
+                }
+                else
+                {
+                    logado = 0;
+                }
+            }
+
+            if (logado)
+            {
+                printf("Vc esta logado!\n");
+                usuarioLogado(usuarios, idLogado, ingressos);
+            }
+            else
+            {
+                system("cls");
+                printf("Email ou senha inválidos \n");
+            }
+
+
+}
+
+void realizarCadastro(usuario usuarios[], int CIP)
+{
+
+    int validaNovamente;
+    char cadastrarNovamente;
+
+         do
+            {
+                for (int i = contador; i < 100; i++)
+                {
+                    puts("Tela cadastro");
+                    id++;
+                    usuarios[i].id = id;
+                    fflush(stdin);
+                    puts("Insira seu nome: ");
+                    scanf("%100[^\n]s", &usuarios[i].nome);
+                    fflush(stdin);
+                    puts("Insira sua idade: ");
+                    scanf("%d", &usuarios[i].idade);
+                    fflush(stdin);
+                    puts("Insira seu email: ");
+                    scanf("%50[^\n]s", &usuarios[i].email);
+                    fflush(stdin);
+                    puts("Insira sua senha: ");
+                    scanf("%15[^\n]s", &usuarios[i].senha);
+                    fflush(stdin);
+                    contador++;
+                    break;
+                }
+                system("cls");
+                printf("Cliente cadastrado com sucesso! \n");
+                for (int i = id  - 1; i < contador; i++)
+                {
+                    printf("Id: %d \n", usuarios[i].id);
+                    printf("Nome: %s \n", usuarios[i].nome);
+                    printf("Idade: %d \n", usuarios[i].idade);
+                }
+
+
+                if(CIP == 0){
+                    printf("Deseja realizar um novo cadastro? (s/n)");
+                    scanf("%c", &cadastrarNovamente);
+                    fflush(stdin);
+
+                    if (cadastrarNovamente == 's')
+                    {
+                        validaNovamente = 0;
+                    }
+                    else
+                    {
+                        validaNovamente = 1;
+                    }
+                }else{
+                    validaNovamente = 1;
+                }
+
+
+            } while (validaNovamente != 1);
+}
+
+void realizarLoginCI(usuario usuarios[], ingresso ingressos[], int idPrmCmp)
+{
+    int CIP;
+
+    printf("\nVc esta logado!\n");
+    puts("Escolha o tipo de ingresso que você deseja");
+
+    CIP = 1;
+    compraIngressos(usuarios, idPrmCmp, ingressos, CIP);
+    usuarioLogado(usuarios, idPrmCmp, ingressos);
+
 }
 
 void retornaObra(int opcaoObra, ingresso ingressos[], int idIngresso)
@@ -466,4 +508,13 @@ void retornaTipoIngresso(int tipoIngresso, ingresso ingressos[], int idIngresso)
     }
 }
 
+void adicionaSaldoCIP(usuario usuarios[], int idLogado, float valorIngressos)
+{
+    float valor;
 
+    printf("Você precisa adicionar um valor maior ou igual a %.2f \n", valorIngressos);
+    puts("Valor a ser adicionado: ");
+    scanf("%f", &valor);
+
+    usuarios[idLogado].saldo = usuarios[idLogado].saldo + valor;
+}

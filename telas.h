@@ -28,19 +28,6 @@ void telaInicio()
     puts("---------------------------");
 }
 
-void telaCompraIngresso()
-{
-    puts("---------------------------");
-    puts("|                         |");
-    puts("| 1 - Ingresso Inteiro    |");
-    puts("| 2 - Meia Entrada        |");
-    puts("| 0 - sair                |");
-    puts("|                         |");
-    puts("|                         |");
-    puts("|                         |");
-    puts("---------------------------");
-}
-
 void telaCompraIngressoLogado(usuario usuaarios[], int i)
 {
     puts("---------------------------");
