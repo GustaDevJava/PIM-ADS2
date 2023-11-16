@@ -12,20 +12,23 @@ struct ingresso
     char obra[100];
     char tipoIngresso[100];
     char dono[100];
-    int  validaIngresso;
+    int idDono;
+    char  validaIngresso[50];
+    char pagamento[100];
 };
 
 typedef struct ingresso ingresso;
 
-
-void telaUsuarioLogado(usuario usuaarios[], int i);
+void telaUsuarioLogado(usuario usuarios[], int i);
 void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[]);
-void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int CIP);
-void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qnt, int opcaoObra, int tipoIngresso);
+void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[]);
+void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qnt, int opcaoObra, int tipoIngresso, int pagamento);
 void realizarLogin(int contador, usuario usuarios[], ingresso ingressos[]);
 void realizarLoginCIP(usuario usuarios[], ingresso ingressos[], int idPrmCmp);
 void realizarCadastro(usuario usuarios[], int CIP);
 void adicionaSaldoCIP(usuario usuarios[], int idLogado, float valorIngressos);
+void validadorIngressos(ingresso ingressos[], int i, int ingressoValido);
+void converteIngressoCSV(ingresso ingressos[]);
 
 int idIngresso = 0, contadorCriaIngresso = 0;
 int contador = 0, id = 0;
@@ -65,14 +68,16 @@ int main()
         switch (opcao)
         {
         case 0:
-            printf("Obrigado por acessar o nosso sistema");
+            puts("=======================================");
+            printf("Obrigado por acessar o nosso sistema!\n");
+            puts("=======================================");
             break;
         case 1:
             realizarCadastro(usuarios, 0);
             break;
         case 2:
 
-            printf("Você tem Cadastro no nosso sistema ? (s/n) \n");
+            telaPossuiCadastro();
             fflush(stdin);
             scanf("%c", &cadastroSN);
 
@@ -81,7 +86,7 @@ int main()
                 realizarLogin(contador, usuarios, ingressos);
             }else
             {
-                puts("Vamos realizar seu cadastro para que você consiga comprar o ingresso");
+                telaAnucioCadastro();
                 idPrmCmp = 1;
                 realizarCadastro(usuarios, idPrmCmp);
 
@@ -96,6 +101,9 @@ int main()
         case 3:
             realizarLogin(contador, usuarios, ingressos);
             break;
+        case 4:
+            telaCatalogo();
+            break;
         default:
             printf("Opção invalida \n");
             break;
@@ -108,7 +116,7 @@ int main()
 
 void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[])
 {
-    int opcao, comparador, CIP = NULL;
+    int opcao, comparador, pag;
     float saldo;
 
     do
@@ -128,34 +136,38 @@ void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[])
             puts("Saindo");
             break;
         case 1:
-            compraIngressos(usuarios, idLogado, ingressos, CIP);
+            compraIngressos(usuarios, idLogado, ingressos);
             break;
         case 2:
             printf("Viu apresentação");
             break;
         case 3:
-            printf("Insira o valor a ser depositado: ");
+            telaDeposito();
             scanf("%f", &saldo);
 
-            usuarios[idLogado].saldo = saldo;
+            usuarios[idLogado].saldo += saldo;
 
-            if (usuarios[idLogado].saldo >= saldo)
-            {
-                printf("Tigrinho pagou \n");
+            telaPagamentoD();
+            scanf("%d", &pag);
+
+            if(usuarios[idLogado].saldo > saldo){
+                converteUsuarioCSV(usuarios);
+                system("cls");
+                puts("Saldo adicionado com sucesso!");
+            }else{
+                system("cls");
+                puts("Erro ao adicionar saldo!");
             }
-            else
-            {
-                printf("Tigrinho não pagou \n");
-            }
+
             break;
         case 4:
-            puts("Seus ingressos: ");
+            telaIngressos();
 
             for(int i = 0; i < contadorCriaIngresso; i++){
 
                 comparador = strcmp(ingressos[i].dono, usuarios[idLogado].nome);
 
-                if(comparador == 0)
+                if(comparador == 0 && ingressos[i].idDono == usuarios[idLogado].id)
                 {
                     printf("\nID Ingresso: %d\n", ingressos[i].id);
                     printf("Dono Ingresso: %s\n", ingressos[i].dono);
@@ -174,10 +186,10 @@ void usuarioLogado(usuario usuarios[], int idLogado, ingresso ingressos[])
     } while (opcao != 0);
 }
 
-void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int CIP)
+void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[])
 {
-    int opcaoCompra, tipoIngresso, opcaoObra, qnt;
-    float total;
+    int opcaoCompra, tipoIngresso, opcaoObra, qnt, opcaoPag;
+    float total, valor;
     char sn;
 
     telaCompraIngressoLogado(usuarios, idLogado);
@@ -195,28 +207,43 @@ void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int
     case 1:
         tipoIngresso = 4;
 
-        puts("Ingresso Interiro valor: R$ 15,00");
-
         telaObras();
         scanf("%d", &opcaoObra);
+
+        telaValorIngresso(15.00, opcaoObra);
+        scanf("%d", &qnt);
+
+        total = 15.00 * qnt;
+
+        telaPagamento(total);
+        scanf("%d", &opcaoPag);
+
+        if(opcaoPag != 2){
+            telaAdicionaValor(total);
+            scanf("%f", &valor);
+
+            usuarios[idLogado].saldo += valor;
+        }
 
         puts("Você deseja continuar com a compra ? (s/n)");
         fflush(stdin);
         scanf("%c", &sn);
 
-        if (sn == 's')
+        if (sn == 's' && usuarios[idLogado].saldo > total)
         {
-            usuarios[idLogado].saldo = usuarios[idLogado].saldo - 15.00;
-            criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso);
-
-        }else if(usuarios[idLogado].saldo >= 15.00)
-        {
-            puts("Seu saldo é insulficiente para comprar esse ingresso");
-        }else
+            usuarios[idLogado].saldo = usuarios[idLogado].saldo - total;
+            criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso, opcaoPag);
+        }
+        else if(sn == 'n')
         {
             system("cls");
+            puts("Compra cancelada");
         }
-
+        else
+        {
+            system("cls");
+            puts("Seu saldo é insulficiente para comprar esse ingresso");
+        }
         break;
     case 2:
         tipoIngresso = 5;
@@ -224,29 +251,36 @@ void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int
         telaObras();
         scanf("%d", &opcaoObra);
 
-        puts("Meio Ingresso valor: R$ 7,50");
-        puts("Quantos ingressos você deseja comprar para está obra ?");
+        telaValorIngresso(7.50, opcaoObra);
         scanf("%d", &qnt);
 
         total = 7.50 * qnt;
 
-        if(CIP != NULL){
-            adicionaSaldoCIP(usuarios, idLogado, total);
+        telaPagamento(total);
+        scanf("%d", &opcaoPag);
+
+        if(opcaoPag != 2){
+            telaAdicionaValor(total);
+            scanf("%f", &valor);
+            puts("=================================================================");
+
+            usuarios[idLogado].saldo += valor;
         }
 
-        printf("Total: %.2f \n", total);
         puts("Você deseja continuar com a compra ? (s/n)");
         fflush(stdin);
         scanf("%c", &sn);
 
+
         if (sn == 's' && usuarios[idLogado].saldo > total)
         {
+            puts("=====================================================================================");
             puts("Saiba que ao adquirir este ingresso, você terá que comprovar o motivo da meia entrada");
+            puts("=====================================================================================");
             usuarios[idLogado].saldo = usuarios[idLogado].saldo - total;
 
-            criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso);
-        }
-        else if(sn == 'n')
+            criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso, opcaoPag);
+        }else if(sn == 'n')
         {
             system("cls");
             puts("Compra cancelada");
@@ -261,7 +295,13 @@ void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int
         telaIsento();
         scanf("%d", &tipoIngresso);
 
-        criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso);
+        telaObras();
+        scanf("%d", &opcaoObra);
+
+        puts("Este tipo de ingresso só pode ser adquirido uma vez, pelo usuario cadastrado");
+        qnt = 1;
+
+        criaIngresso(ingressos, usuarios, idLogado, qnt, opcaoObra, tipoIngresso, opcaoPag);
 
         break;
     default:
@@ -269,9 +309,9 @@ void compraIngressos(usuario usuarios[], int idLogado, ingresso ingressos[], int
     }
 }
 
-void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qnt, int opcaoObra, int tipoIngresso)
+void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qnt, int opcaoObra, int tipoIngresso, int pagamento)
 {
-    int comparador;
+    int comparador, ingressoValido = 1;
 
 
     for(int q = 0; q < qnt; q++)
@@ -280,8 +320,11 @@ void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qn
         {
             idIngresso++;
             ingressos[i].id = idIngresso;
+            ingressos[i].idDono = usuarios[idLogado].id;
             strcpy(ingressos[i].dono, usuarios[idLogado].nome);
+            validadorIngressos(ingressos, i, ingressoValido);
             retornaObra(opcaoObra, ingressos, i);
+            retornaTipoPagamento(pagamento, ingressos, i);
             retornaTipoIngresso(tipoIngresso, ingressos, i);
             contadorCriaIngresso++;
             break;
@@ -289,18 +332,22 @@ void criaIngresso(ingresso ingressos[], usuario usuarios[], int idLogado, int qn
     }
 
 
-    for(int i = 0; i < contadorCriaIngresso; i++)
+    converteIngressoCSV(ingressos);
+
+    for(int i = 0; i <= contadorCriaIngresso; i++)
     {
 
         comparador = strcmp(ingressos[i].dono, usuarios[idLogado].nome);
 
         if(comparador == 0)
         {
-            printf("ID Ingresso: %d\n", ingressos[i].id);
+            printf("\nID Ingresso: %d\n", ingressos[i].id);
             printf("Dono Ingresso: %s\n", ingressos[i].dono);
             printf("Obra: %s\n", ingressos[i].obra);
             printf("Tipo Ingresso: %s\n", ingressos[i].tipoIngresso);
-            printf("---------------------------------");
+            printf("Status: %s\n", ingressos[i].validaIngresso);
+            printf("Pagamento: %s\n", ingressos[i].pagamento);
+            printf("---------------------------------\n");
         }
 
     }
@@ -311,43 +358,48 @@ void realizarLogin(int contador, usuario usuarios[], ingresso ingressos[])
 
     char emailValidar[50];
     char senhaValidar[15];
-    int compSenha, compEmail, logado, idLogado;
+    int compSenha, compEmail, compCPF, logado, idLogado;
 
+            telaLogin();
             fflush(stdin);
-            printf("Informe seu email ou CPF: \n");
+            printf("Informe seu e-mail ou CPF: \n");
             scanf("%50[^\n]s", &emailValidar);
             fflush(stdin);
             printf("Informe sua senha: \n");
             scanf("%15[^\n]s", &senhaValidar);
             fflush(stdin);
+            puts("=====================");
 
             for (int i = 0; i <= contador; i++)
             {
 
+                compCPF = strcmp(usuarios[i].cpf, emailValidar);
                 compEmail = strcmp(usuarios[i].email, emailValidar);
                 compSenha = strcmp(usuarios[i].senha, senhaValidar);
 
-                if (compEmail == 0 && compSenha == 0)
-                {
+                if(compCPF == 0 || compEmail == 0){
+                    if (compSenha == 0)
+                    {
                     logado = 1;
                     idLogado = i;
                     break;
-                }
-                else
-                {
+                    }
+
+                }else{
                     logado = 0;
                 }
+
             }
 
             if (logado)
             {
-                printf("Vc esta logado!\n");
+                telaAnucioLogado();
                 usuarioLogado(usuarios, idLogado, ingressos);
             }
             else
             {
                 system("cls");
-                printf("Email ou senha inválidos \n");
+                printf("E-mail/CPF ou senha inválidos \n");
             }
 
 
@@ -363,27 +415,34 @@ void realizarCadastro(usuario usuarios[], int CIP)
             {
                 for (int i = contador; i < 100; i++)
                 {
-                    puts("Tela cadastro");
+                    telaCadastro();
                     id++;
                     usuarios[i].id = id;
                     fflush(stdin);
                     puts("Insira seu nome: ");
                     scanf("%100[^\n]s", &usuarios[i].nome);
                     fflush(stdin);
+                    puts("Insira sua Data de Nascimento (dia/mês/ano): ");
+                    gets(usuarios[i].data_nascimento);
                     puts("Insira sua idade: ");
                     scanf("%d", &usuarios[i].idade);
                     fflush(stdin);
+                    puts("Insira seu CPF: ");
+                    gets(usuarios[i].cpf);
                     puts("Insira seu email: ");
                     scanf("%50[^\n]s", &usuarios[i].email);
                     fflush(stdin);
                     puts("Insira sua senha: ");
                     scanf("%15[^\n]s", &usuarios[i].senha);
                     fflush(stdin);
+                    puts("=======================");
                     contador++;
                     break;
                 }
+
+                converteUsuarioCSV(usuarios);
                 system("cls");
-                printf("Cliente cadastrado com sucesso! \n");
+                telaCadastroSucesso();
                 for (int i = id  - 1; i < contador; i++)
                 {
                     printf("Id: %d \n", usuarios[i].id);
@@ -415,27 +474,25 @@ void realizarCadastro(usuario usuarios[], int CIP)
 
 void realizarLoginCI(usuario usuarios[], ingresso ingressos[], int idPrmCmp)
 {
-    int CIP;
 
-    printf("\nVc esta logado!\n");
+    telaAnucioLogado();
     puts("Escolha o tipo de ingresso que você deseja");
 
-    CIP = 1;
-    compraIngressos(usuarios, idPrmCmp, ingressos, CIP);
+    compraIngressos(usuarios, idPrmCmp, ingressos);
     usuarioLogado(usuarios, idPrmCmp, ingressos);
 
 }
 
 void retornaObra(int opcaoObra, ingresso ingressos[], int idIngresso)
 {
-    char obra1[50] = "Obra 1";
-    char obra2[50] = "Obra 2";
-    char obra3[50] = "Obra 3";
-    char obra4[50] = "Obra 4";
-    char obra5[50] = "Obra 5";
-    char obra6[50] = "Obra 6";
-    char obra7[50] = "Obra 7";
-    char obra8[50] = "Obra 8";
+    char obra1[50] = "Tocha Olimpica de Paris";
+    char obra2[50] = "Phryges(Mascote)";
+    char obra3[50] = "Prancha do Italo Ferreira";
+    char obra4[50] = "Toca Michel Phelps";
+    char obra5[50] = "Disco(Lançamento de disco)";
+    char obra6[50] = "Maquete Stade de France";
+    char obra7[50] = "BreakDance";
+    char obra8[50] = "Bola de basquete Lebrom James";
     char passeLivre[50] = "Passe Livre";
     char obraErro[50] = "Erro";
 
@@ -479,9 +536,9 @@ void retornaTipoIngresso(int tipoIngresso, ingresso ingressos[], int idIngresso)
 {
     char meiaEntrada[50] = "Meia";
     char inteira[50] = "Inteira";
-    char pdc[50] = "PDC";
-    char mais60[50] = "+60";
-    char campanha[50] = "Campanha";
+    char pdc[50] = "PDC, Isento";
+    char mais60[50] = "+60, Isento";
+    char campanha[50] = "Campanha, Isento";
     char erro[50] = "Erro";
 
     switch(tipoIngresso)
@@ -508,13 +565,88 @@ void retornaTipoIngresso(int tipoIngresso, ingresso ingressos[], int idIngresso)
     }
 }
 
-void adicionaSaldoCIP(usuario usuarios[], int idLogado, float valorIngressos)
+void retornaTipoPagamento(int tipoPag, ingresso ingressos[], int idIngresso)
 {
-    float valor;
+    char PIX[50] = "PIX";
+    char credito[50] = "C/ Crédito";
+    char debito[50] = "C/ Débito";
+    char saldoConta[50] = "Saldo da conta";
+    char erro[50] = "Erro";
 
-    printf("Você precisa adicionar um valor maior ou igual a %.2f \n", valorIngressos);
-    puts("Valor a ser adicionado: ");
-    scanf("%f", &valor);
+    switch(tipoPag)
+    {
+        case 1:
+            strcpy(ingressos[idIngresso].pagamento, PIX);
+            break;
+        case 2:
+            strcpy(ingressos[idIngresso].pagamento, saldoConta);
+            break;
+		case 3:
+		    strcpy(ingressos[idIngresso].pagamento, credito);
+            break;
+        case 4:
+		    strcpy(ingressos[idIngresso].pagamento, debito);
+            break;
+        default:
+            strcpy(ingressos[idIngresso].tipoIngresso, erro);
+            break;
 
-    usuarios[idLogado].saldo = usuarios[idLogado].saldo + valor;
+    }
 }
+
+void validadorIngressos(ingresso ingressos[], int i, int ingressoValido)
+{
+    char valido[50] = "Válido";
+    char invalido[50] = "Inválido";
+    char erro[10] = "Erro";
+
+    switch(ingressoValido)
+    {
+        case 0:
+            strcpy(ingressos[i].validaIngresso, invalido);
+            break;
+        case 1:
+            strcpy(ingressos[i].validaIngresso, valido);
+            break;
+        default:
+            strcpy(ingressos[i].validaIngresso, erro);
+            break;
+    }
+
+}
+
+void converteIngressoCSV(ingresso ingressos[])
+{
+
+    FILE *arquivoCSV = fopen("ingressos.csv", "w");
+    if (arquivoCSV == NULL)
+    {
+        perror("Erro ao abrir o arquivo CSV");
+    }
+
+    for(int i = 0; i <= contadorCriaIngresso; i++){
+        fprintf(arquivoCSV,"%d, %s, %s, %s, %d, %s \n ", ingressos[i].id, ingressos[i].obra, ingressos[i].tipoIngresso,
+                ingressos[i].dono, ingressos[i].idDono, ingressos[i].validaIngresso);
+    }
+
+    fclose(arquivoCSV);
+}
+
+void converteUsuarioCSV(usuario usuarios[])
+{
+
+    FILE *arquivoCSV = fopen("usuarios.csv", "w");
+    if (arquivoCSV == NULL)
+    {
+        perror("Erro ao abrir o arquivo CSV");
+    }
+
+    for(int i = 0; i < contador; i++){
+        fprintf(arquivoCSV,"%d, %s, %d, %s, %s, %s, %s,", usuarios[i].id, usuarios[i].nome, usuarios[i].idade,
+                usuarios[i].email, usuarios[i].senha, usuarios[i].cpf, usuarios[i].data_nascimento);
+    }
+
+    fclose(arquivoCSV);
+}
+
+
